@@ -1,0 +1,41 @@
+name: PDF to EPS Converter (Gem)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install ImageMagick & Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick ghostscript
+          
+          # Fix policy ImageMagick biar dibolehin baca PDF
+          sudo sed -i 's/domain="coder" rights="none" pattern="PDF"/domain="coder" rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+
+      - name: Konversi PDF ke EPS (Fix Layout)
+        run: |
+          mkdir -p output
+          
+          for file in input/*.pdf; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .pdf)
+              echo "Lagi proses: $file"
+              
+              # -density 300 biar kaga pecah/burik
+              # -alpha remove biar background-nya kaga aneh
+              convert -density 300 "$file" -alpha remove -background white "output/${filename}.eps"
+            fi
+          done
+
+      - name: Upload Hasil Konversi
+        uses: actions/upload-artifact@v4
+        with:
+          name: file-eps-hasil-rapih
+          path: output/
