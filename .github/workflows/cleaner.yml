@@ -1,0 +1,31 @@
+name: Cleanup GH Actions & Releases
+
+on:
+  workflow_dispatch: # Biar bisa loe giles manual kapan aja
+  schedule:
+    - cron: '0 0 * * 0' # Otomatis jalan tiap hari Minggu jam 12 malem
+
+jobs:
+  delete-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Workflow Runs
+        uses: Mattraider/delete-workflow-runs-action@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
+
+      - name: Delete All Artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: '*' # Hapus semua nama artifact (file zip)
+
+      - name: Delete Old Releases
+        uses: dev-drprasad/delete-older-releases@v0.3.3
+        with:
+          keep_latest: 0 # Hapus semua release
+          delete_tags: true # Tag-nya juga ikutan dihapus biar bersih total
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
