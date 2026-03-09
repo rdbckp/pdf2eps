@@ -1,0 +1,66 @@
+name: Convert PDF to EPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert-pdf-to-eps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghostscript
+
+      - name: Convert PDF to EPS
+        run: |
+          PDF_FILES=$(find ./input -name "*.pdf")
+
+          if [ -z "$PDF_FILES" ]; then
+            echo "❌ Tidak ada file PDF di folder input/"
+            exit 1
+          fi
+
+          mkdir -p eps_output
+
+          for PDF_FILE in $PDF_FILES; do
+            FILENAME=$(basename "$PDF_FILE" .pdf)
+            echo "🔄 Mengkonversi: $PDF_FILE"
+
+            PAGE_COUNT=$(gs -q -dNODISPLAY -c "($PDF_FILE) (r) file runpdfbegin pdfpagecount = quit" 2>/dev/null)
+            echo "   📄 Jumlah halaman: $PAGE_COUNT"
+
+            if [ "$PAGE_COUNT" -gt 1 ]; then
+              for (( PAGE=1; PAGE<=PAGE_COUNT; PAGE++ )); do
+                OUTPUT="eps_output/${FILENAME}_page${PAGE}.eps"
+                gs -q -dBATCH -dNODISPLAY -dNOPAUSE \
+                   -dFirstPage=$PAGE -dLastPage=$PAGE \
+                   -sDEVICE=eps2write \
+                   -sOutputFile="$OUTPUT" \
+                   "$PDF_FILE"
+                echo "   ✅ Halaman $PAGE → $OUTPUT"
+              done
+            else
+              OUTPUT="eps_output/${FILENAME}.eps"
+              gs -q -dBATCH -dNODISPLAY -dNOPAUSE \
+                 -sDEVICE=eps2write \
+                 -sOutputFile="$OUTPUT" \
+                 "$PDF_FILE"
+              echo "   ✅ Selesai → $OUTPUT"
+            fi
+          done
+
+          echo ""
+          echo "🎉 Semua file berhasil dikonversi!"
+          ls -lh eps_output/
+
+      - name: Upload EPS as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eps-output
+          path: eps_output/
+          retention-days: 7
