@@ -1,4 +1,4 @@
-name: Download Inkscape Portable (Stable Direct)
+name: Inkscape
 
 on:
   workflow_dispatch:
@@ -14,38 +14,25 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Create tools folder and download
+      - name: Preparing
         run: |
           git lfs install
           git lfs track "*.AppImage"
           git add .gitattributes
           mkdir -p tools
-          # Bersihin dulu kalo ada sisa file html/error dari run sebelumnya
           rm -f tools/inkscape.AppImage 
-          
-          echo "Lagi nyedot Inkscape AppImage (±200MB)..."
-          
-          # Link ini langsung ke file binari, bukan halaman galeri
           wget -O tools/inkscape.AppImage https://media.inkscape.org/dl/resources/file/Inkscape-091e20e-x86_64.AppImage
-          
-          # Cek ukuran file (kalo di bawah 100MB berarti gagal/HTML)
           FILESIZE=$(stat -c%s "tools/inkscape.AppImage")
-          echo "Ukuran file: $FILESIZE bytes"
-          
           if [ $FILESIZE -lt 100000000 ]; then
-            echo "Waduh! File kegedean/kekecilan, fiks bukan AppImage asli."
             exit 1
           fi
-          
           chmod +x tools/inkscape.AppImage
-          echo "Download mantap, file beneran aplikasi!"
 
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Buffer gede biar push file 200MB kaga gagal
           git config --global http.postBuffer 524288000
           
           git add tools/inkscape.AppImage
