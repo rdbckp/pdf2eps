@@ -1,0 +1,43 @@
+name: Download Inkscape Portable (Direct Link)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download-inkscape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create tools folder and download
+        run: |
+          mkdir -p tools
+          echo "Lagi nyedot Inkscape AppImage yang asli bro..."
+          
+          # Pake link direct dari GitHub Releases Inkscape (v1.3.2)
+          # Link ini langsung ke binari-nya, bukan ke halaman web
+          curl -L -o tools/inkscape.AppImage https://github.com/inkscape/inkscape/releases/download/v1.3.2/Inkscape-091e20e-x86_64.AppImage
+          
+          # Cek dikit filenya, kalo isinya HTML pasti ada tulisan '<!DOCTYPE'
+          if grep -q "<!DOCTYPE" tools/inkscape.AppImage; then
+            echo "Wah parah, masih narik HTML bro! Linknya salah."
+            exit 1
+          fi
+          
+          chmod +x tools/inkscape.AppImage
+          echo "Download mantap, file beneran aplikasi!"
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global http.postBuffer 524288000
+          
+          git add tools/inkscape.AppImage
+          git commit -m "Add real portable Inkscape [skip ci]" || echo "No changes"
+          git push origin main
