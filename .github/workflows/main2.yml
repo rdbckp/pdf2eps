@@ -1,0 +1,40 @@
+name: PDF to EPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert-process:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Prepare Portable Inkscape
+        run: |
+          chmod +x tools/inkscape.AppImage
+          
+          ./tools/inkscape.AppImage --appimage-extract
+          
+          sudo ln -s $(pwd)/squashfs-root/AppRun /usr/local/bin/inkscape
+
+      - name: PDF to EPS (Text to Curves)
+        run: |
+          mkdir -p output
+          for file in input/*.pdf; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .pdf)
+              inkscape "$file" \
+                --export-type=eps \
+                --export-text-to-path \
+                --export-filename="output/${filename}.eps"
+            fi
+          done
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: file-eps
+          path: output/
+          retention-days: 1
