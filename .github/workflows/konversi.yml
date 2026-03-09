@@ -1,0 +1,34 @@
+name: PDF to EPS Converter
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghostscript
+
+      - name: Convert PDF to EPS
+        run: |
+          mkdir -p output
+          for f in input/*.pdf; do
+            name=$(basename "$f" .pdf)
+            gs -dNOPAUSE -dBATCH -dSAFER \
+               -sDEVICE=eps2write \
+               -sOutputFile="output/$name.eps" \
+               "$f"
+          done
+
+      - name: Upload EPS
+        uses: actions/upload-artifact@v4
+        with:
+          name: eps-result
+          path: output/*.eps
