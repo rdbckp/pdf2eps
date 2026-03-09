@@ -1,31 +1,56 @@
-name: Cleanup GH Actions & Releases
+name: Cleanup
 
 on:
-  workflow_dispatch: # Biar bisa loe giles manual kapan aja
-  schedule:
-    - cron: '0 0 * * 0' # Otomatis jalan tiap hari Minggu jam 12 malem
+  workflow_dispatch: # Jalankan manual dari tab Actions
 
 jobs:
-  delete-runs:
+  total-cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Wajib buat hapus file & release
+      actions: write  # Wajib buat hapus log run
+    
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - name: Delete Workflow Runs
-        uses: Mattraider/delete-workflow-runs-action@v2
-        with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          retain_days: 0
-          keep_minimum_runs: 0
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Delete All Artifacts
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: '*' # Hapus semua nama artifact (file zip)
+      # --- BAGIAN 1: HAPUS FILE GAMBAR DI REPO ---
+      - name: Delete Image Files
+        run: |
+          echo "🧹 Menghapus file gambar (png, jpg, svg, dll)..."
+          rm -f *.png *.jpg *.jpeg *.bmp *.svg *.webp
+          
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore: cleanup images [skip ci]"
+            git push
+          else
+            echo "🤷 Gak ada file gambar yang perlu diapus."
+          fi
 
-      - name: Delete Old Releases
-        uses: dev-drprasad/delete-older-releases@v0.3.3
-        with:
-          keep_latest: 0 # Hapus semua release
-          delete_tags: true # Tag-nya juga ikutan dihapus biar bersih total
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # --- BAGIAN 2: HAPUS SEMUA RELEASES & TAGS ---
+      - name: Delete All Releases and Tags
+        run: |
+          echo "📦 Memulai pembersihan Releases..."
+          # Ambil semua tag release, lalu hapus satu-satu pake GitHub CLI
+          # --cleanup-tag bakal hapus release SEKALIGUS tag git-nya
+          gh release list --limit 1000 --json tagName -q '.[].tagName' | xargs -I{} gh release delete {} --yes --cleanup-tag || echo "Releases sudah kosong."
+
+      # --- BAGIAN 3: BABAT LOG HISTORY (ANTI-SELF-DESTRUCT) ---
+      - name: Purge Old Workflow Runs
+        run: |
+          echo "🔥 Memulai pembantaian log history..."
+          CURRENT_RUN_ID="${{ github.run_id }}"
+          
+          # Ambil list ID, buang ID yang sekarang, lalu delete
+          gh run list --limit 1000 --json databaseId -q '.[].databaseId' \
+          | grep -v "$CURRENT_RUN_ID" \
+          | xargs -I{} gh run delete {} || echo "Beberapa log mungkin sudah bersih."
+          
+          echo "✨ SEMUA BERSIH KINCLONG, BROOOOHH!"
