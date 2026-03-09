@@ -1,4 +1,4 @@
-name: PDF to EPS (gemini)
+name: PDF to EPS (Anti Tsunami Version)
 
 on:
   workflow_dispatch:
@@ -11,34 +11,33 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Ghostscript
+      - name: Install Cairo & Poppler
         run: |
           sudo apt-get update
-          sudo apt-get install -y ghostscript
+          sudo apt-get install -y poppler-utils
 
-      - name: Konversi PDF ke EPS (Text to Curves)
+      - name: Konversi PDF ke EPS (Perfect Layout & Curves)
         run: |
           mkdir -p output
           
           for file in input/*.pdf; do
             if [ -f "$file" ]; then
               filename=$(basename "$file" .pdf)
-              echo "Lagi giles font jadi vector: $file"
+              echo "Lagi proses giles: $file"
               
-              # Parameter kunci: -dNOCACHE
-              # Ini bakal maksa Ghostscript nulis teks sebagai path/garis, bukan font
-              gs -z \
-                -dNOPAUSE \
-                -dBATCH \
-                -dNOCACHE \
-                -sDEVICE=eps2write \
-                -sOutputFile="output/${filename}.eps" \
-                "$file"
+              # Trik Rahasia: pdftocairo
+              # -eps: output formatnya EPS
+              # -level3: biar support vector modern
+              # Engine ini bakal otomatis ngerender font ke path kalau dia kaga nemu font-nya
+              pdftocairo -eps -level3 "$file" "output/${filename}.eps"
+              
+              echo "Berhasil: output/${filename}.eps"
             fi
           done
 
       - name: Upload Hasil Jadi
         uses: actions/upload-artifact@v4
         with:
-          name: file-eps-full-vector
+          name: file-eps-anti-tsunami
           path: output/
+          retention-days: 3
