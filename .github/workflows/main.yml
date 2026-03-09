@@ -1,0 +1,47 @@
+name: PDF to EPS Ultimate (Portable Inkscape)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Portable Inkscape
+        run: |
+          # Kasih izin eksekusi ke file AppImage yang ada di repo
+          chmod +x ./tools/inkscape.AppImage
+          
+          # AppImage butuh FUSE di Ubuntu, kalau kaga ada kita ekstrak aja isinya
+          # Ini cara paling aman di GitHub Runner
+          ./tools/inkscape.AppImage --appimage-extract
+          sudo ln -s $(pwd)/squashfs-root/AppRun /usr/local/bin/inkscape
+
+      - name: Konversi PDF ke EPS (Text to Path)
+        run: |
+          mkdir -p output
+          
+          for file in input/*.pdf; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .pdf)
+              echo "Lagi giles pake Inkscape Portable: $file"
+              
+              # Panggil inkscape yang udah kita link tadi
+              inkscape "$file" \
+                --export-type=eps \
+                --export-text-to-path \
+                --export-filename="output/${filename}.eps"
+                
+              echo "Selesai: output/${filename}.eps"
+            fi
+          done
+
+      - name: Upload Hasil
+        uses: actions/upload-artifact@v4
+        with:
+          name: eps-portable-result
+          path: output/
