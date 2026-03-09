@@ -1,0 +1,44 @@
+name: PDF to EPS (gemini)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert-to-curves:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghostscript
+
+      - name: Konversi PDF ke EPS (Text to Curves)
+        run: |
+          mkdir -p output
+          
+          for file in input/*.pdf; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .pdf)
+              echo "Lagi giles font jadi vector: $file"
+              
+              # Parameter kunci: -dNOCACHE
+              # Ini bakal maksa Ghostscript nulis teks sebagai path/garis, bukan font
+              gs -z \
+                -dNOPAUSE \
+                -dBATCH \
+                -dNOCACHE \
+                -sDEVICE=eps2write \
+                -sOutputFile="output/${filename}.eps" \
+                "$file"
+            fi
+          done
+
+      - name: Upload Hasil Jadi
+        uses: actions/upload-artifact@v4
+        with:
+          name: file-eps-full-vector
+          path: output/
