@@ -1,4 +1,4 @@
-name: Download Inkscape Portable (Direct Link)
+name: Download Inkscape Portable (Stable Direct)
 
 on:
   workflow_dispatch:
@@ -17,15 +17,20 @@ jobs:
       - name: Create tools folder and download
         run: |
           mkdir -p tools
-          echo "Lagi nyedot Inkscape AppImage yang asli bro..."
+          # Bersihin dulu kalo ada sisa file html/error dari run sebelumnya
+          rm -f tools/inkscape.AppImage 
           
-          # Pake link direct dari GitHub Releases Inkscape (v1.3.2)
-          # Link ini langsung ke binari-nya, bukan ke halaman web
-          curl -L -o tools/inkscape.AppImage https://github.com/inkscape/inkscape/releases/download/v1.3.2/Inkscape-091e20e-x86_64.AppImage
+          echo "Lagi nyedot Inkscape AppImage (±200MB)..."
           
-          # Cek dikit filenya, kalo isinya HTML pasti ada tulisan '<!DOCTYPE'
-          if grep -q "<!DOCTYPE" tools/inkscape.AppImage; then
-            echo "Wah parah, masih narik HTML bro! Linknya salah."
+          # Link ini langsung ke file binari, bukan halaman galeri
+          wget -O tools/inkscape.AppImage https://media.inkscape.org/dl/resources/file/Inkscape-091e20e-x86_64.AppImage
+          
+          # Cek ukuran file (kalo di bawah 100MB berarti gagal/HTML)
+          FILESIZE=$(stat -c%s "tools/inkscape.AppImage")
+          echo "Ukuran file: $FILESIZE bytes"
+          
+          if [ $FILESIZE -lt 100000000 ]; then
+            echo "Waduh! File kegedean/kekecilan, fiks bukan AppImage asli."
             exit 1
           fi
           
@@ -36,6 +41,8 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Buffer gede biar push file 200MB kaga gagal
           git config --global http.postBuffer 524288000
           
           git add tools/inkscape.AppImage
