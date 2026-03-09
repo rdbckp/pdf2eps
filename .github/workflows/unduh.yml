@@ -16,6 +16,9 @@ jobs:
 
       - name: Create tools folder and download
         run: |
+          git lfs install
+          git lfs track "*.AppImage"
+          git add .gitattributes
           mkdir -p tools
           # Bersihin dulu kalo ada sisa file html/error dari run sebelumnya
           rm -f tools/inkscape.AppImage 
