@@ -1,43 +1,44 @@
-name: PDF to EPS (Anti Tsunami Version)
+name: PDF to EPS Ultimate (Inkscape Method)
 
 on:
   workflow_dispatch:
 
 jobs:
-  convert-to-curves:
+  convert:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Cairo & Poppler
+      - name: Install Inkscape
         run: |
+          sudo add-apt-repository ppa:inkscape.dev/stable -y
           sudo apt-get update
-          sudo apt-get install -y poppler-utils
+          sudo apt-get install -y inkscape
 
-      - name: Konversi PDF ke EPS (Perfect Layout & Curves)
+      - name: Konversi PDF ke EPS (Text to Path)
         run: |
           mkdir -p output
           
           for file in input/*.pdf; do
             if [ -f "$file" ]; then
               filename=$(basename "$file" .pdf)
-              echo "Lagi proses giles: $file"
+              echo "Lagi diproses pake Inkscape: $file"
               
-              # Trik Rahasia: pdftocairo
-              # -eps: output formatnya EPS
-              # -level3: biar support vector modern
-              # Engine ini bakal otomatis ngerender font ke path kalau dia kaga nemu font-nya
-              pdftocairo -eps -level3 "$file" "output/${filename}.eps"
-              
-              echo "Berhasil: output/${filename}.eps"
+              # Trik maut: --export-type=eps --export-text-to-path
+              # Ini bakal maksa semua teks jadi garis/objek vector murni
+              inkscape "$file" \
+                --export-type=eps \
+                --export-text-to-path \
+                --export-filename="output/${filename}.eps"
+                
+              echo "Selesai: output/${filename}.eps"
             fi
           done
 
-      - name: Upload Hasil Jadi
+      - name: Upload Hasil Anti Ngaco
         uses: actions/upload-artifact@v4
         with:
-          name: file-eps-anti-tsunami
+          name: eps-inkscape-result
           path: output/
-          retention-days: 3
