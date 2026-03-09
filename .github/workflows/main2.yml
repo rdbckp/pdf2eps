@@ -14,9 +14,7 @@ jobs:
       - name: Prepare Portable Inkscape
         run: |
           chmod +x tools/inkscape.AppImage
-          
           ./tools/inkscape.AppImage --appimage-extract
-          
           sudo ln -s $(pwd)/squashfs-root/AppRun /usr/local/bin/inkscape
 
       - name: PDF to EPS (Text to Curves)
