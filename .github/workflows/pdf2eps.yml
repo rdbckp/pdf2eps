@@ -1,4 +1,4 @@
-name: PDF to EPS (Inkscape LFS Mode)
+name: PDF to EPS
 
 on:
   workflow_dispatch:
@@ -11,23 +11,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          lfs: true # Wajib dinyalain biar file aslinya ditarik, bukan pointernya doang
+          lfs: true
 
-      - name: Extract Inkscape dari LFS
+      - name: Extract Inkscape
         run: |
-          # Kasih izin eksekusi
           chmod +x tools/inkscape.AppImage
-          
-          # Ekstrak isi AppImage-nya
-          # Ini bakal bikin folder baru namanya 'squashfs-root'
           ./tools/inkscape.AppImage --appimage-extract > /dev/null
-          
-          # Bikin link biar perintah 'inkscape' bisa dipanggil langsung
           sudo ln -s $(pwd)/squashfs-root/AppRun /usr/local/bin/inkscape
-          
-          echo "Inkscape LFS siap digas brooohh!"
 
-      - name: Konversi PDF ke EPS (Anti Missing Font)
+      - name: PDF ke EPS
         run: |
           mkdir -p output
           
@@ -35,8 +27,6 @@ jobs:
             if [ -f "$file" ]; then
               filename=$(basename "$file" .pdf)
               echo "Giles font di file: $file"
-              
-              # Pake --export-text-to-path biar font Bebas Neue loe kaga lari
               inkscape "$file" \
                 --export-type=eps \
                 --export-text-to-path \
@@ -44,8 +34,8 @@ jobs:
             fi
           done
 
-      - name: Upload Hasil
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: file-eps-rapih-lfs
+          name: file-eps
           path: output/
